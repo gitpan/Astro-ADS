@@ -1,0 +1,48 @@
+2001-11-10  Tim Jenness  <t.jenness@jach.hawaii.edu>
+
+	* Result/Paper/Paper.pm (summary): Deal with undefined values
+
+	* adsquery.pl: Add --bibcode
+
+	* Result/Result.pm (summary): Fix -w warning
+
+2001-11-10 Alasdair Allan <aa@astro.ex.ac.uk>
+
+        * Query.pm: Added bibcode() method and associated $self->{OPTIONS}
+          hash entry as requested by Tim.
+
+2001-11-07 Tim Jenness  <t.jenness@jach.hawaii.edu>
+
+	* Result/Result.pm (summary): Add summary and stringify
+
+	* Result/Paper/Paper.pm (summary): Add summary and stringify
+
+	* adsquery.pl: Add first stab at adsquery command line
+
+	* Result/Result.pm (papers): Add a papers method
+
+2001-11-07 Alasdair Allan <aa@astro.ex.ac.uk>
+
+        * Query.pm: Added timeout() method
+
+2001-11-04 Alasdair Allan <aa@astro.ex.ac.uk>
+
+        * Query.pm: Added proxy() method
+
+2001-11-02 Alasdair Allan <aa@astro.ex.ac.uk>
+
+        * Pre-alpha release, not for general distribution.
+
+2001-11-02 Alasdair Allan <aa@astro.ex.ac.uk>
+
+        * Now parses ADS successfully in all tested cases, can carry out
+          a limited selection of followup queries on the results.
+
+2001-10-31 Alasdair Allan <aa@astro.ex.ac.uk>
+
+        * Minimum functionality implemented,  no parsing of ADS query 
+          into Results object
+
+2001-10-30 Alasdair Allan <aa@astro.ex.ac.uk>
+
+        * Original version
