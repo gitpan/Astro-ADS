@@ -38,9 +38,8 @@ Astro::ADS::Result - Results from an ADS Query
 
 =head1 DESCRIPTION
 
-Stores the results returned from an ADS search as a hash of
-Astro::ADS::Result::Paper objects, with the papers being indexed
-by bibcode.
+Stores the results returned from an ADS search as an array of
+Astro::ADS::Result::Paper objects.
 
 =cut
 

@@ -1,14 +1,12 @@
 use ExtUtils::MakeMaker;
-use File::Spec;
-
-my $file = File::Spec->catfile(File::Spec->curdir, "Query", "Query.pm");
-
 
 WriteMakefile( 
                'NAME'           => 'Astro::ADS',
-	       'VERSION_FROM'   => $file,
-               'PREREQ_PM'      => { LWP => 5.53,
-                                     Net::Domain },
+	       'VERSION'        => '1.18',
+               'EXE_FILES'      => [ 'adsquery' ],
+               'PREREQ_PM'      => { LWP         => 5.53,
+                                     Net::Domain => 2.13,
+                                     Pod::Usage  => 1.14 },
 	       'dist'           => { COMPRESS => "gzip -9f"},
 	       ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
 	       ( ABSTRACT       => 'Module designed to query the ADS',
