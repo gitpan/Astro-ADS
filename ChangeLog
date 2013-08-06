@@ -1,3 +1,46 @@
+2013-08-06  Boyd Duffee <b dot duffee at keele dot ac dot uk>
+
+	* re-vamped the Test Suite
+		- changed all tests to use Test::More
+		- uses is_deeply() to test array values 
+		- added 00-load.t and moved the load module tests
+		- added 01-lwp.t for the User Agent specific code
+		- tests add [Test Suite hh:mm:ss] to their UserAgent strings
+		- added sleep before subsequent calls to ADS to ease burden on remote server
+		- general de-cluttering, moving print statements to diag()
+
+	* Query.pm
+		- removed explicit return undef statements for failure, as per
+			Perl Best Practices, p199
+		- agent() can now add information to the UserAgent string
+
+	* Paper.pm
+		- removed explicit return undef statements for failure, as per
+			Perl Best Practices, p199
+
+	* Updated all modules to version 1.25, just for consistancy
+		(except where it isn't)
+
+2011-07-11  Boyd Duffee <b dot duffee at isc dot keele dot ac dot uk>
+
+	* Query.pm
+		- applied same fix as #35645 to the followup queries
+		- improved error reporting on HTTP::Request to include URL 
+			and HTTP_PROXY in output
+		- changed URL to access a new class attribute, accessible via the 
+			ads_mirror class method
+
+	* added and updated tests and released as v1.21.0
+
+2010-02-10  Boyd Duffee <b dot duffee at isc dot keele dot ac dot uk>
+
+	* Fixed bugs in Query.pm: 
+		- #35645 filed at rt.cpan.org (Ampersands);
+		- last line missing from data fetch (while condition tested 
+			in wrong order)
+
+	* updated tests to reflect current ADS values and test for bug #35645
+
 2003-07-15  Alasdair Allan <aa@astro.ex.ac.uk>
 
         * ADS.pm: Introduced a placeholder class to get round a documentation

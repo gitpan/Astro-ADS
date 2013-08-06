@@ -19,7 +19,7 @@ package Astro::ADS::Query;
 #    Alasdair Allan (aa@astro.ex.ac.uk)
 
 #  Revision:
-#     $Id: Query.pm,v 1.21 2002/09/23 21:07:49 aa Exp $
+#     $Id: Query.pm,v 1.24 2011/07/01 bjd Exp $
 
 #  Copyright:
 #     Copyright (C) 2001 University of Exeter. All Rights Reserved.
@@ -67,12 +67,25 @@ use Astro::ADS::Result::Paper;
 use Net::Domain qw(hostname hostdomain);
 use Carp;
 
-'$Revision: 1.21 $ ' =~ /.*:\s(.*)\s\$/ && ($VERSION = $1);
+'$Revision: 1.25 $ ' =~ /.*:\s(.*)\s\$/ && ($VERSION = $1);
+
+# C L A S S   A T T R I B U T E S ------------------------------------------
+{
+	my $_ads_mirror = 'cdsads.u-strasbg.fr';	# this is the default mirror site
+	sub ads_mirror {
+		my ($class, $new_mirror) = @_;
+		$_ads_mirror = $new_mirror if @_ > 1;
+		return $_ads_mirror;
+	}
+}
 
 # C O N S T R U C T O R ----------------------------------------------------
 
 =head1 REVISION
 
+$Id: Query.pm,v 1.25 2013/08/06 bjd Exp $
+$Id: Query.pm,v 1.24 2009/07/01 bjd Exp $
+$Id: Query.pm,v 1.22 2009/05/01 bjd Exp $
 $Id: Query.pm,v 1.21 2002/09/23 21:07:49 aa Exp $
 
 =head1 METHODS
@@ -111,6 +124,7 @@ sub new {
                       BUFFER    => undef }, $class;
 
   # Configure the object
+  # does nothing if no arguments supplied
   $block->configure( @_ );
 
   return $block;
@@ -140,7 +154,7 @@ sub querydb {
   $self->_make_query();
 
   # check for failed connect
-  return undef unless defined $self->{BUFFER};
+  return unless defined $self->{BUFFER};
 
   # return an Astro::ADS::Result object
   return $self->_parse_query();
@@ -164,7 +178,7 @@ sub followup {
   my $self = shift;
 
   # return unless we have arguments
-  return undef unless @_;
+  return unless @_;
 
   my $bibcode = shift;
   my $link_type = shift;
@@ -173,7 +187,7 @@ sub followup {
   $self->_make_followup( $bibcode, $link_type );
 
   # check for failed connect
-  return undef unless defined $self->{BUFFER};
+  return unless defined $self->{BUFFER};
 
   # return an Astro::ADS::Result object
   return $self->_parse_query();
@@ -239,17 +253,22 @@ Return (or set) the current base URL for the ADS query.
 
 if not defined the default URL is cdsads.u-strasbg.fr
 
+As of v1.24, this method sets a class attribute to keep it
+consistant across all objects.  Not terribly thread safe, but
+at least you know where your query is going.
+
 =cut
 
 sub url {
   my $self = shift;
+  my $class = ref($self);	# now re-implemented as a class attribute
 
   # SETTING URL
   if (@_) { 
 
     # set the url option 
     my $base_url = shift; 
-    $self->{URL} = $base_url;
+    $class->ads_mirror( $base_url );
     if( defined $base_url ) {
        $self->{QUERY} = "http://$base_url/cgi-bin/nph-abs_connect?";
        $self->{FOLLOWUP} = "http://$base_url/cgi-bin/nph-ref_query?";
@@ -257,7 +276,7 @@ sub url {
   }
 
   # RETURNING URL
-  return $self->{URL};
+  return $class->ads_mirror();
 }
 
 =item B<agent>
@@ -270,7 +289,15 @@ Returns the user agent tag sent by the module to the ADS server.
 
 sub agent {
   my $self = shift;
-  return $self->{USERAGENT}->agent();
+  my $string = shift;
+  if (defined $string) {
+	my $agent = $self->{USERAGENT}->agent();
+	$agent =~ s/(\d+)\s(\[.*\]\s*)?\(/$1 [$string] (/;
+	return $self->{USERAGENT}->agent($agent);
+  }
+  else {
+    return $self->{USERAGENT}->agent();
+  }
 }
 
 # O T H E R   M E T H O D S ------------------------------------------------
@@ -606,15 +633,15 @@ Does nothing if the array is not supplied.
 
 sub configure {
   my $self = shift;
+  my $class = ref($self);
 
   # CONFIGURE DEFAULTS
   # ------------------
 
   # define the default base URL
-  $self->{URL} = "cdsads.u-strasbg.fr";
+  my $default_url = $class->ads_mirror();
   
   # define the query URLs
-  my $default_url = $self->{URL};
   $self->{QUERY} = "http://$default_url/cgi-bin/nph-abs_connect?";
   $self->{FOLLOWUP} = "http://$default_url/cgi-bin/nph-ref_query?";
 
@@ -681,7 +708,7 @@ sub configure {
   # -------------------------
 
   # return unless we have arguments
-  return undef unless @_;
+  return unless @_;
 
   # grab the argument list
   my %args = @_;
@@ -730,7 +757,11 @@ sub _make_query {
 
    # loop round all the options keys and build the query
    foreach my $key ( keys %{$self->{OPTIONS}} ) {
-      $options = $options . "&$key=${$self->{OPTIONS}}{$key}";
+      # some bibcodes have & and needs to be made "web safe"
+      my $websafe_option = ${$self->{OPTIONS}}{$key};
+      $websafe_option =~ s/&/%26/g;
+      $options = $options . "&$key=$websafe_option";
+
    }
 
    # build final query URL
@@ -771,12 +802,20 @@ sub _make_query {
       # we definately have an error
       if( $error_flag ) { 
          $self->{BUFFER} = undef;
-         croak("Error ${$reply}{_rc}: Failed to establish network connection");
+		 my $proxy_string = undef;
+		 if ($proxy_string = $ua->proxy('http')) { substr($proxy_string, 0, 0) = ' using proxy '; }
+		 else { $proxy_string = ' (no proxy)'; }
+         croak("Error ${$reply}{_rc}: Failed to establish network connection to $URL",
+				$proxy_string, "\n");
       }
       
    } else {
       $self->{BUFFER} = undef;
-      croak("Error ${$reply}{_rc}: Failed to establish network connection");
+	  my $proxy_string = undef;
+	  if ($proxy_string = $ua->proxy('http')) { substr($proxy_string, 0, 0) = ' using proxy '; }
+	  else { $proxy_string = ' (no proxy)'; }
+      croak("Error ${$reply}{_rc}: Failed to establish network connection to $URL",
+				$proxy_string, "\n");
    }
    
    
@@ -803,6 +842,7 @@ sub _make_followup {
 
    # which paper?
    my $bibcode = shift;
+   $bibcode =~ s/&/%26/g;	# make ampersands websafe
 
    # which followup?
    my $refs = shift;
@@ -826,7 +866,11 @@ sub _make_followup {
       $self->{BUFFER} = ${$reply}{"_content"};
    } else {
       $self->{BUFFER} = undef;
-      croak("Error ${$reply}{_rc}: Failed to establish network connection" . $self->{BUFFER} ."\n");
+	  my $proxy_string = undef;
+	  if ($proxy_string = $ua->proxy('http')) { substr($proxy_string, 0, 0) = ' using proxy '; }
+	  else { $proxy_string = ' (no proxy) '; }
+      croak("Error ${$reply}{_rc}: Failed to establish network connection to $URL" .
+			$proxy_string . $self->{BUFFER} ."\n");
    }
 }
 
@@ -852,9 +896,9 @@ sub _parse_query {
   my $paper;
 
   # loop round the returned buffer and stuff the contents into Paper objects
-  my ( $line, $next, $counter );
+  my ( $next, $counter );
   $next = $counter = 0;
-  foreach $line ( 0 ... $#buffer ) {
+  foreach my $line ( 0 ... $#buffer ) {
 
      #     R     Bibcode
      #     T     Title
@@ -903,8 +947,9 @@ sub _parse_query {
         # LOOP THROUGH PAPER
         my ( @title, @authors, @affil, @journal, @pubdate, @keywords, 
              @origin, @links, @url, @object, @abstract, @score );
-        while ( substr( $buffer[$counter], 0, 2 ) ne "%R" &&
-                $counter < $#buffer ) {
+        while ( $counter <= $#buffer &&
+                substr( $buffer[$counter], 0, 2 ) ne "%R" ) {
+
 
            # grab the tags
            if( substr( $buffer[$counter], 0, 1 ) eq "%" ) {
@@ -1130,10 +1175,10 @@ sub _parse_query {
            }
 
 
+           # set the next paper increment
+           $next = $counter;
            # increment the line counter
            $counter++;
-           # set the next paper increment
-           $next = $counter - 1;
 
         }
 
@@ -1325,6 +1370,19 @@ sub _dump_options {
 =back
 
 =end __PRIVATE_METHODS__
+
+=head1 BUGS
+
+=over
+
+=item #35645 filed at rt.cpan.org (Ampersands)
+
+Older versions can't handle ampersands in the bibcode, such as A&A for Astronomy & Astrophysics.
+Fixed for queries in 1.22 - 5/2009.
+Fixed for references in 1.23 - Boyd Duffee E<lt>b dot duffee at isc dot keele dot ac dot ukE<gt>, 7/2011.
+
+=back
+
 
 =head1 COPYRIGHT
 
