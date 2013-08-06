@@ -22,4 +22,4 @@ requires:
   Net::Domain: 2.13
   Pod::Usage: 1.14
   Test::More: 0.65
-version: 1.25
+version: v1.25.1
