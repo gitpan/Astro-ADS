@@ -12,6 +12,12 @@ the L<Astro::ADS::Query> module.
 
 =head1 REVISION
 
+B<NOTE:> The API for the ADS is changing and the current interface will disappear.
+This will be the final revision of this version of Astro::ADS.  The new API
+(described at L<https://github.com/adsabs/adsabs-dev-api> ) will be implemented
+as version 2.0 sometime in 2015.
+
+$Id: ADS.pm,v 1.26 2014/06/15 bjd Exp $
 $Id: ADS.pm,v 1.25 2013/08/06 bjd Exp $
 $Id: ADS.pm,v 1.3 2004/01/28 09:04:42 aa Exp $
 
@@ -57,7 +63,7 @@ above which turns the URL from an object variable to a class variable.
 Explain the preference to set the class variable using the ads_mirror() method
 in Astro::ADS::Query at the top of the script so that followup queries go to
 the expected place.
-
+*NB*
 Also note that the proxy() method is only affects one query object and 
 the user agent looks at the environment variables HTTP_PROXY and NO_PROXY to
 the exclusion of almost all else.  Once again, set $ENV{HTTP_PROXY} at the
@@ -74,10 +80,17 @@ This is a "good" idea, but fiddly to implement.  Prompt the user for one of the
 ADS mirrors during the installation and write it into Astro::ADS::Query to save
 setting it at the beginning of each script
 
+=item Error 500: handle network failures gracefully.  
+
+Return undef instead of die()ing.
+
+=back
+
 =cut
 
 use strict;
+use warnings;
 use vars qw/ $VERSION /;
-$VERSION = '1.25.1';
+$VERSION = '1.26';
 
 1;                                                                  
